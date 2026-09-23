@@ -1,51 +1,39 @@
 #!name=xchina.co 去广告
-#!desc=复用站点自带的 window.__ad_free 开关，去掉顶飘/浮动视频/底飘/页内横幅/插图/底栏图标，并拦截 ExoClick 与广告物料域。Safari/Chrome 走 MITM。
+#!desc=复用站点 window.__ad_free，清顶飘/浮动/底飘/页内横幅等；Map Local 空化 core-state；拦 ExoClick/magsrv 与 /service/click。需 MITM 且系统信任 Surge CA。远程安装请用 raw.githubusercontent.com 链接。
 #!category=Ad Block
-#!arguments=skipGA:0
-#!arguments-desc=skipGA=1 时同时拦截 Google Analytics（可选，不影响广告）
-
-[General]
-# HTTP/3 会绕过 MITM。Surge 对 MITM hostname 默认 auto-quic-block=true，这里显式打开。
-# skip-server-cert-verify 仅在源站证书异常时再开，默认关。
+#!requirement=CORE_VERSION>=20
 
 [Rule]
-# 第三方广告网：域名层直接掐，不必走 HTTP 引擎
 DOMAIN-SUFFIX,magsrv.com,REJECT,pre-matching
 DOMAIN-SUFFIX,exoclick.com,REJECT,pre-matching
 DOMAIN-SUFFIX,exdynsrv.com,REJECT,pre-matching
 DOMAIN-SUFFIX,exosrv.com,REJECT,pre-matching
 DOMAIN-SUFFIX,realsrv.com,REJECT,pre-matching
 DOMAIN,xchina.click,REJECT,pre-matching
-# upload.xchina.io 同时托管小说封面 /fiction/、模特头 /model/、默认图 /default/。
-# 不要对该域做 MITM：Chrome 不信任 Surge 证书时封面会 ERR_CERT_AUTHORITY_INVALID。
-# 广告物料 /media/ 交给页面 __ad_free 开关，不再网络层拦这个域。
-# 统计可选。默认不拦，避免和站点功能页混淆。
-# DOMAIN-SUFFIX,googletagmanager.com,REJECT,pre-matching
-# DOMAIN-SUFFIX,google-analytics.com,REJECT,pre-matching
-# DOMAIN-SUFFIX,analytics.google.com,REJECT,pre-matching
+DOMAIN-SUFFIX,xchina.click,REJECT,pre-matching
+# DOMAIN-SUFFIX,googletagmanager.com,REJECT
+# DOMAIN-SUFFIX,google-analytics.com,REJECT
+# DOMAIN-SUFFIX,analytics.google.com,REJECT
 
 [URL Rewrite]
-# 点击中转。HTTPS 必须 MITM 才能命中路径。
-# 不要 rewrite upload.xchina.io：该域封面和广告物料混部，MITM 后 Chrome 会证书失败。
-^https?://xchina\.click/(upload|prepare) _ reject
-^https?://[^/]*xchina\.(co|online|work|app|click)/service/click _ reject
+^https?://([^/]+\.)?xchina\.click/(upload|prepare)(_|\?|/|$) _ reject
+^https?://[^/]*xchina\.(co|online|work|app|click)/service/click(_|\?|/|$) _ reject
 ^https?://(a|s|ads|syndication)\.magsrv\.com/ _ reject
+^https?://([^/]+\.)?(exoclick|exdynsrv|exosrv|realsrv)\.com/ _ reject
 
 [Map Local]
-# 把广告状态接口打成空对象，runtime 即使漏过 __ad_free 也没有物料可渲染
-^https?://[^/]*xchina\.(co|online|work)/service/assets/core-state\.js data-type=text data="window.__CORE_STATE__={\"ads\":[],\"zones\":{},\"packages\":{}};" header="Content-Type:application/javascript; charset=utf-8"
+^https?://([^/]+\.)?xchina\.(co|online|work|app)/service/assets/core-state\.js data-type=text data="window.__CORE_STATE__={\"meta\":{\"generated_at\":0},\"auto_closed\":{},\"ads\":[],\"zones\":{},\"packages\":{}};" header="Content-Type:application/javascript; charset=utf-8"
+
+[Header Rewrite]
+http-response ^https?://([^/]+\.)?xchina\.(co|online|work)/ header-del Delegate-CH
 
 [Body Rewrite]
-# 只改 HTML。pattern 必须带页面后缀或根路径，避免命中 /service/assets/*.js。
-# 上一版 window.__site_id 替换会把 JS 里的 ?? 运算符切坏，Chrome 报 Unexpected token ';'。
-http-response ^https?://([^/]+\.)?xchina\.(co|online|work)/($|[^?\s]*\.html) <head> <head><script>window.__ad_free=true;</script>
+http-response ^https?://([^/]+\.)?xchina\.(co|online|work)/(?!service/|scripts/|css/|images/|plugins/)([^?\s]*)$ (?i)<head([^>]*)> <head$1><script>window.__ad_free=true;</script>
 
 [Script]
-xchina-adfree = type=http-response,pattern=^https?://([^/]+\.)?xchina\.(co|online|work)/($|[^?\s]*\.html),requires-body=1,max-size=1048576,script-path=xchina-adfree.js,timeout=5
+xchina-adblock = type=http-response,pattern=^https?://([^/]+\.)?xchina\.(co|online|work)/(?!service/|scripts/|css/|images/|plugins/)([^?\s]*)$,requires-body=1,max-size=2097152,script-path=https://raw.githubusercontent.com/GLH08/userscript/main/surge/xchina-adblock.js,timeout=5
 
 [MITM]
-# 只解密站点自己和广告物料域。不要把 *.xchina.io / *.xchina.download 整段塞进来：
-# img.xchina.io 是套图 CDN，video/cdn.xchina.download 是 HLS，解密它们只增加耗电。
-hostname = %APPEND% xchina.co, *.xchina.co, xchina.online, xchina.work, xchina.click, a.magsrv.com, s.magsrv.com, ads.magsrv.com, syndication.magsrv.com
+hostname = %APPEND% xchina.co, *.xchina.co, xchina.online, *.xchina.online, xchina.work, *.xchina.work, xchina.app, *.xchina.app, xchina.click, *.xchina.click, a.magsrv.com, s.magsrv.com, ads.magsrv.com, syndication.magsrv.com
 h2 = true
 auto-quic-block = true
