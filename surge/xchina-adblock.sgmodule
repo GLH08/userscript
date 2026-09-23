@@ -31,7 +31,7 @@ http-response ^https?://([^/]+\.)?xchina\.(co|online|work)/ header-del Delegate-
 http-response ^https?://([^/]+\.)?xchina\.(co|online|work)/(?!service/|scripts/|css/|images/|plugins/)([^?\s]*)$ (?i)<head([^>]*)> <head$1><script>window.__ad_free=true;</script>
 
 [Script]
-xchina-adblock = type=http-response,pattern=^https?://([^/]+\.)?xchina\.(co|online|work)/(?!service/|scripts/|css/|images/|plugins/)([^?\s]*)$,requires-body=1,max-size=2097152,script-path=https://raw.githubusercontent.com/GLH08/userscript/refs/heads/main/surge/xchina-adblock.js?token=GHSAT0AAAAAAEFHGCCQNMVNY5ZSSXO5E3MY2VTHHLQ,timeout=5
+xchina-adblock = type=http-response,pattern=^https?://([^/]+\.)?xchina\.(co|online|work)/(?!service/|scripts/|css/|images/|plugins/)([^?\s]*)$,requires-body=1,max-size=2097152,script-path=https://raw.githubusercontent.com/GLH08/userscript/refs/heads/main/surge/xchina-adblock.js,timeout=5
 
 [MITM]
 hostname = %APPEND% xchina.co, *.xchina.co, xchina.online, *.xchina.online, xchina.work, *.xchina.work, xchina.app, *.xchina.app, xchina.click, *.xchina.click, a.magsrv.com, s.magsrv.com, ads.magsrv.com, syndication.magsrv.com
