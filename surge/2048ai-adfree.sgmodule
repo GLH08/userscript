@@ -1,0 +1,41 @@
+#!name=2048ai.vip 去广告 + 外播
+#!desc=空化广告 API / 关掉 AI 弹窗；加载视频时通知跳转 SenPlayer/VidHub/Lenna/Infuse。需 MITM + 信任 Surge CA。远程安装本 sgmodule；脚本已指向 raw.githubusercontent.com。外播参数见 arguments。
+#!category=Ad Block
+#!requirement=CORE_VERSION>=20
+#!arguments=player:SenPlayer
+#!arguments-desc=player: SenPlayer | VidHub | Lenna | Infuse。也可用模块 Script 行改 argument=scheme=你的前缀（url 会自动 encode 拼上）。
+
+[Rule]
+IP-CIDR,154.201.133.145/32,REJECT,no-resolve
+DOMAIN,d1d1wi0u28674b.cloudfront.net,REJECT
+DOMAIN-SUFFIX,t9my8kdn5q.cc,REJECT
+DOMAIN-SUFFIX,pyp3c7t3nx.cc,REJECT
+DOMAIN-SUFFIX,zmj2kys2.cc,REJECT
+DOMAIN-SUFFIX,mgwztx8h8.cc,REJECT
+DOMAIN-SUFFIX,mwn3apjyn.cc,REJECT
+DOMAIN-SUFFIX,nk9uik-t1t1.icu,REJECT
+DOMAIN-SUFFIX,u1pz90ig.work,REJECT
+DOMAIN-SUFFIX,g7toxp8a.work,REJECT
+DOMAIN-SUFFIX,a7qmjfy6.work,REJECT
+DOMAIN-SUFFIX,klb97nvc.work,REJECT
+DOMAIN-SUFFIX,n34nk2cwd.cc,REJECT
+DOMAIN-SUFFIX,gay21.top,REJECT
+DOMAIN-SUFFIX,hgflcc.top,REJECT
+DOMAIN-SUFFIX,haoaw38.top,REJECT
+
+[URL Rewrite]
+^https?://([^/]+\.)?(2048ai\.vip|madouai\.xyz)/api/v1/track/(ad-click|ai-selection-download-click|channel-click)(_|\?|/|$) _ reject
+
+[Map Local]
+^https?://([^/]+\.)?(2048ai\.vip|madouai\.xyz)/api/v1/ads(\?|$) data-type=text data="{\"code\":200,\"message\":\"ok\",\"data\":[]}" header="Content-Type:application/json; charset=utf-8"
+^https?://([^/]+\.)?(2048ai\.vip|madouai\.xyz)/api/v1/ai-selection/config(\?|$) data-type=text data="{\"code\":200,\"message\":\"ok\",\"data\":{\"promotionApp\":{\"enabled\":false},\"popup\":{\"enabled\":false,\"mode\":\"none\",\"items\":[]},\"singlePopup\":{\"enabled\":false,\"mode\":\"none\",\"items\":[]},\"multiPopup\":{\"enabled\":false,\"mode\":\"none\",\"items\":[]}}}" header="Content-Type:application/json; charset=utf-8"
+
+[Script]
+2048ai-ads-empty = type=http-response,pattern=^https?://([^/]+\.)?(2048ai\.vip|madouai\.xyz)/api/v1/ads(\?|$),requires-body=1,max-size=1048576,script-path=https://raw.githubusercontent.com/GLH08/userscript/main/surge/2048ai-ads-empty.js,timeout=5
+2048ai-ai-sel = type=http-response,pattern=^https?://([^/]+\.)?(2048ai\.vip|madouai\.xyz)/api/v1/ai-selection/config(\?|$),requires-body=1,max-size=1048576,script-path=https://raw.githubusercontent.com/GLH08/userscript/main/surge/2048ai-adfree.js,timeout=5
+2048ai-play = type=http-response,pattern=^https?://([^/]+\.)?(2048ai\.vip|madouai\.xyz)/api/v1/m3u8/proxy(\?|$),requires-body=0,max-size=0,script-path=https://raw.githubusercontent.com/GLH08/userscript/main/surge/2048ai-play-notify.js,timeout=5,argument=player={{{player}}}
+
+[MITM]
+hostname = %APPEND% 2048ai.vip, *.2048ai.vip, madouai.xyz, *.madouai.xyz
+h2 = true
+auto-quic-block = true
